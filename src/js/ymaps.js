@@ -1,21 +1,18 @@
-
-let myMap;
-let coords;
-const map = document.querySelector('#map');
-
-map.addEventListener('click', function () {
-
-})
+import review from '../templates/reviews.hbs'
+// console.log(review);
 
 function mapInit() {
+    let objData = {};
+    //инициализация карты
     ymaps.ready(() => {
-        myMap = new ymaps.Map('map', {
+        let myMap = new ymaps.Map('map', {
             center: [56.32, 44.00],
             zoom: 12,
             behaviors: ['drag']
         }, {
             searchControlProvider: 'yandex#search'
         })
+        //добавляем кластер
         let clusterer = new ymaps.Clusterer({
             clusterDisableClickZoom: true,
             clusterOpenBalloonOnClick: true,
@@ -39,12 +36,21 @@ function mapInit() {
             // Можно отключить отображение меню навигации.
             // clusterBalloonPagerVisible: false
         });
+        // console.log('clusterer', clusterer);
         myMap.geoObjects.add(clusterer);
 
+        //слушатель кликов по карте
         myMap.events.add('click', function (event) {
-            openModal(event);
-        });
+            let coords = event.get('coords');
 
+            objData.myMap = myMap;
+            objData.coords = coords;
+            objData.clusterer = clusterer;
+
+            getClickCoords(coords);
+
+            openModal(event, objData);
+        });
     })
 }
 
@@ -76,7 +82,7 @@ function validate(element) {
     }
 }
 
-function addListeners() {
+function addFeedback(obj, hint) {
     const form = document.querySelector('.form');
     const modal = document.querySelector('.form__review');
 
@@ -93,7 +99,6 @@ function addListeners() {
     }
 
     form.addEventListener('submit', (event) => {
-        console.log(event)
         event.preventDefault();
         balloonName.textContent = inputName.value;
         balloonPlace.textContent = inputPlace.value;
@@ -102,50 +107,66 @@ function addListeners() {
         if (!validateForm()) {
             return;
         }
+        if (!hint) {
+            let placemark = new ymaps.Placemark(obj.coords, {
+                hintContent: modal.lastChild.innerHTML,
+                balloonContent: modal.innerHTML
+            }, {
+                preset: 'islands#darkOrangeDotIcon',
+                openHintOnHover: false
+            });
 
+            obj.myMap.geoObjects.add(placemark);
+            obj.clusterer.add(placemark);
 
-        let placemark = new ymaps.Placemark(coords, {
-            balloonContent: modal.innerHTML
-        });
-        // clusterer.add(placemark);
-        myMap.geoObjects.add(placemark);
+            balloonName.textContent = '';
+            balloonPlace.textContent = '';
+            balloonArea.textContent = '';
 
-        balloonName.textContent = '';
-        balloonPlace.textContent = '';
-        balloonArea.textContent = '';
+            modal.style.display = 'none';
+        } else {
+            let hintFromMark = placemark.properties._data.hintContent;
 
-        modal.style.display = 'none';
+            placemark.events.add('click', () => {
+                openModal(event, obj, hintFromMark);
+            })
+        }
     })
-
-    
 }
 
-
-function openModal(event) {
+function openModal(event, obj, hint) {
     // event.preventDefault();
+    //координаты модального окна в документе (по верхнему левому углу)
     let posX = event.getSourceEvent().originalEvent.domEvent.originalEvent.clientX;
     let posY = event.getSourceEvent().originalEvent.domEvent.originalEvent.clientY;
-    coords = event.get('coords');
-    getClickCoords(coords);
+
+
+
+    const render = document.querySelector('.reviews__list');
+    render.innerHTML = review({
+        review: [
+            {
+                name: '',
+                place: '',
+                feedback: ''
+            }
+        ]
+    });
 
     const modal = document.querySelector('.form__review');
     modal.style.display = 'block';
     modal.style.left = `${posX}px`;
     modal.style.top = `${posY}px`;
-    
-    addListeners();
+
+    addFeedback(obj, hint);
 }
 
 function getClickCoords(coords) {
     return ymaps.geocode(coords)
-        .then(response => resolve(response.geoObjects.get(0).getAddressLine()))
+        .then(response => console.log('getClickCoords', response))
         .catch(e => reject(e))
 }
 
 export {
-    mapInit,
-    addListeners,
-    openModal,
-    validateForm,
-    getClickCoords
+    mapInit
 }
