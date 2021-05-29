@@ -41,7 +41,10 @@ function mapInit() {
         });
         myMap.geoObjects.add(clusterer);
 
-        addListeners();
+        myMap.events.add('click', function (event) {
+            openModal(event);
+        });
+
     })
 }
 
@@ -107,17 +110,19 @@ function addListeners() {
         // clusterer.add(placemark);
         myMap.geoObjects.add(placemark);
 
+        balloonName.textContent = '';
+        balloonPlace.textContent = '';
+        balloonArea.textContent = '';
 
         modal.style.display = 'none';
     })
 
-    myMap.events.add('click', function (event) {
-        openModal(event);
-    });
+    
 }
 
 
 function openModal(event) {
+    // event.preventDefault();
     let posX = event.getSourceEvent().originalEvent.domEvent.originalEvent.clientX;
     let posY = event.getSourceEvent().originalEvent.domEvent.originalEvent.clientY;
     coords = event.get('coords');
@@ -127,14 +132,14 @@ function openModal(event) {
     modal.style.display = 'block';
     modal.style.left = `${posX}px`;
     modal.style.top = `${posY}px`;
+    
+    addListeners();
 }
 
 function getClickCoords(coords) {
-    return new Promise((resolve, reject) => {
-        ymaps.geocode(coords)
-            .then(response => resolve(response.geoObjects.get(0).getAddressLine()))
-            .catch(e => reject(e))
-    })
+    return ymaps.geocode(coords)
+        .then(response => resolve(response.geoObjects.get(0).getAddressLine()))
+        .catch(e => reject(e))
 }
 
 export {
