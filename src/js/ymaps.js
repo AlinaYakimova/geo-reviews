@@ -75,6 +75,9 @@ function openModal(event, obj, hint= '') {
     modal.style.left = `${posX}px`;
     modal.style.top = `${posY}px`;
 
+    const popup = document.querySelector('.popup');
+    popup.innerHTML = review();
+
     addFeedback(obj, hint);
 }
 
