@@ -42,6 +42,7 @@ function mapInit() {
         //слушатель кликов по карте
         myMap.events.add('click', function (event) {
             let coords = event.get('coords');
+            let hintContent = '';
 
             objData.myMap = myMap;
             objData.coords = coords;
@@ -49,8 +50,113 @@ function mapInit() {
 
             getClickCoords(coords);
 
-            openModal(event, objData);
+            openModal(event, objData, hintContent);
         });
+    })
+}
+
+function clickOnPlacemark(mark, obj) {
+    let hintFromMark = mark.properties._data.hintContent;
+
+    mark.events.add('click', (event) => {
+        console.log(hintFromMark);
+        
+        openModal(event, obj, hintFromMark);
+    })
+}
+
+function openModal(event, obj, hint) {
+    // event.preventDefault();
+    //координаты модального окна в документе (по верхнему левому углу)
+    let posX = event.getSourceEvent().originalEvent.domEvent.originalEvent.clientX;
+    let posY = event.getSourceEvent().originalEvent.domEvent.originalEvent.clientY;
+
+    const modal = document.querySelector('.form__review');
+
+    modal.style.display = 'block';
+    modal.style.left = `${posX}px`;
+    modal.style.top = `${posY}px`;
+
+    addFeedback(obj, hint);
+}
+
+function getClickCoords(coords) {
+    return ymaps.geocode(coords)
+        .then(response => console.log('getClickCoords', response))
+        .catch(e => reject(e))
+}
+
+function addFeedback(obj, hint) {
+    const form = document.querySelector('.form');
+    const modal = document.querySelector('.form__review');
+
+    const inputs = document.querySelectorAll('.input');
+    const inputName = document.querySelector('#name');
+    const inputPlace = document.querySelector('#place');
+    const inputReview = document.querySelector('#feedback');
+    // const feedbackName = document.querySelector('.review__name');
+    // const feedbackPlace = document.querySelector('.review__place');
+    // const feedbackArea = document.querySelector('.review__text');
+
+    for (const input of inputs) {
+        input.value = "";
+    }
+
+    const render = document.querySelector('.reviews__list');
+    
+    form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        // feedbackName.textContent = inputName.value;
+        // feedbackPlace.textContent = inputPlace.value;
+        // feedbackArea.textContent = inputReview.value;
+        
+
+        if (!validateForm()) {
+            return;
+        }
+
+        if (!hint) {
+            let placemark = new ymaps.Placemark(obj.coords, {
+                hintContent: render.innerHTML = review({
+                    review: [
+                        {
+                            name: inputName.value,
+                            place: inputPlace.value,
+                            feedback: inputReview.value
+                        }
+                    ]
+                }),
+                balloonContent: ''
+            }, {
+                openHintOnHover: false
+            });
+
+            obj.myMap.geoObjects.add(placemark);
+            obj.clusterer.add(placemark);
+
+            modal.style.display = 'none';
+
+            clickOnPlacemark(placemark, obj);
+        } else {
+            let placemark = new ymaps.Placemark(obj.coords, {
+                hintContent: render.lastChild.innerHTML = review({
+                    review: [
+                        {
+                            name: inputName.value,
+                            place: inputPlace.value,
+                            feedback: inputReview.value
+                        }
+                    ]
+                }),
+                balloonContent: ''
+            }, {
+                openHintOnHover: false
+            });
+
+            obj.clusterer.add(placemark);
+
+            modal.style.display = 'none';
+        }
     })
 }
 
@@ -80,91 +186,6 @@ function validate(element) {
         // element.style.border = "none";
         return true;
     }
-}
-
-function addFeedback(obj, hint) {
-    const form = document.querySelector('.form');
-    const modal = document.querySelector('.form__review');
-
-    const inputs = document.querySelectorAll('.input');
-    const inputName = document.querySelector('#name');
-    const inputPlace = document.querySelector('#place');
-    const inputReview = document.querySelector('#feedback');
-    const balloonName = document.querySelector('.review__name');
-    const balloonPlace = document.querySelector('.review__place');
-    const balloonArea = document.querySelector('.review__text');
-
-    for (const input of inputs) {
-        input.value = "";
-    }
-
-    form.addEventListener('submit', (event) => {
-        event.preventDefault();
-        balloonName.textContent = inputName.value;
-        balloonPlace.textContent = inputPlace.value;
-        balloonArea.textContent = inputReview.value;
-
-        if (!validateForm()) {
-            return;
-        }
-        if (!hint) {
-            let placemark = new ymaps.Placemark(obj.coords, {
-                hintContent: modal.lastChild.innerHTML,
-                balloonContent: modal.innerHTML
-            }, {
-                preset: 'islands#darkOrangeDotIcon',
-                openHintOnHover: false
-            });
-
-            obj.myMap.geoObjects.add(placemark);
-            obj.clusterer.add(placemark);
-
-            balloonName.textContent = '';
-            balloonPlace.textContent = '';
-            balloonArea.textContent = '';
-
-            modal.style.display = 'none';
-        } else {
-            let hintFromMark = placemark.properties._data.hintContent;
-
-            placemark.events.add('click', () => {
-                openModal(event, obj, hintFromMark);
-            })
-        }
-    })
-}
-
-function openModal(event, obj, hint) {
-    // event.preventDefault();
-    //координаты модального окна в документе (по верхнему левому углу)
-    let posX = event.getSourceEvent().originalEvent.domEvent.originalEvent.clientX;
-    let posY = event.getSourceEvent().originalEvent.domEvent.originalEvent.clientY;
-
-
-
-    const render = document.querySelector('.reviews__list');
-    render.innerHTML = review({
-        review: [
-            {
-                name: '',
-                place: '',
-                feedback: ''
-            }
-        ]
-    });
-
-    const modal = document.querySelector('.form__review');
-    modal.style.display = 'block';
-    modal.style.left = `${posX}px`;
-    modal.style.top = `${posY}px`;
-
-    addFeedback(obj, hint);
-}
-
-function getClickCoords(coords) {
-    return ymaps.geocode(coords)
-        .then(response => console.log('getClickCoords', response))
-        .catch(e => reject(e))
 }
 
 export {
