@@ -42,15 +42,13 @@ function mapInit() {
         //слушатель кликов по карте
         myMap.events.add('click', function (event) {
             let coords = event.get('coords');
-            let hintContent = '';
 
             objData.myMap = myMap;
             objData.coords = coords;
             objData.clusterer = clusterer;
 
-            getClickCoords(coords);
+            getClickCoords(objData, event);
 
-            openModal(event, objData, hintContent);
         });
     })
 }
@@ -65,7 +63,7 @@ function clickOnPlacemark(mark, obj) {
     })
 }
 
-function openModal(event, obj, hint) {
+function openModal(event, obj, hint= '') {
     // event.preventDefault();
     //координаты модального окна в документе (по верхнему левому углу)
     let posX = event.getSourceEvent().originalEvent.domEvent.originalEvent.clientX;
@@ -80,9 +78,9 @@ function openModal(event, obj, hint) {
     addFeedback(obj, hint);
 }
 
-function getClickCoords(coords) {
-    return ymaps.geocode(coords)
-        .then(response => console.log('getClickCoords', response))
+function getClickCoords(obj, event) {
+    ymaps.geocode(obj.coords)
+        .then(openModal(event, obj))
         .catch(e => reject(e))
 }
 
