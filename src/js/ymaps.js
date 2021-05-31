@@ -54,6 +54,13 @@ function mapInit() {
     })
 }
 
+function getClickCoords(obj, event) {
+    ymaps.geocode(obj.coords)
+        .then(
+            openModal(event, obj))
+        .catch(e => reject(e))
+}
+
 function clickOnPlacemark(mark, obj) {
     let hintFromMark = mark.properties._data.hintContent;
 
@@ -63,6 +70,15 @@ function clickOnPlacemark(mark, obj) {
         openModal(event, obj, hintFromMark);
     })
 }
+function clickOnClusterer(cluster, obj) {
+    let hintFromClusterer = cluster.properties._data.hintContent;
+
+    cluster.events.add('click', (event) => {
+        console.log('click on clusterer',hintFromClusterer);
+        
+        openModal(event, obj, hintFromClusterer);
+    })
+}
 
 function openModal(event, obj, hint= '') {
     // event.preventDefault();
@@ -70,25 +86,19 @@ function openModal(event, obj, hint= '') {
     let posX = event.getSourceEvent().originalEvent.domEvent.originalEvent.clientX;
     let posY = event.getSourceEvent().originalEvent.domEvent.originalEvent.clientY;
 
+    const popup = document.querySelector('.popup');
+    popup.innerHTML = popupTemplate();
+
     const modal = document.querySelector('.form__review');
 
     modal.style.display = 'block';
     modal.style.left = `${posX}px`;
     modal.style.top = `${posY}px`;
 
-    const popup = document.querySelector('.popup');
-    popup.innerHTML = popupTemplate();
-
     addFeedback(obj, hint, popup);
 }
 
-function getClickCoords(obj, event) {
-    ymaps.geocode(obj.coords)
-        .then(openModal(event, obj))
-        .catch(e => reject(e))
-}
-
-function addFeedback(obj, hint, popup) {
+function addFeedback(obj, hint) {
     const form = document.querySelector('.form');
     const modal = document.querySelector('.form__review');
 
@@ -136,9 +146,20 @@ function addFeedback(obj, hint, popup) {
             obj.myMap.geoObjects.add(placemark);
             obj.clusterer.add(placemark);
 
-            popup.style.display = 'none';
+            render.innerHTML = review({
+                review: [
+                    {
+                        name: inputName.value,
+                        place: inputPlace.value,
+                        feedback: inputReview.value
+                    }
+                ]
+            });
+
+            // modal.style.display = 'none';
 
             clickOnPlacemark(placemark, obj);
+            clickOnClusterer(obj.clusterer, obj);
         } else {
             let placemark = new ymaps.Placemark(obj.coords, {
                 hintContent: render.lastChild.innerHTML = review({
@@ -157,7 +178,7 @@ function addFeedback(obj, hint, popup) {
 
             obj.clusterer.add(placemark);
 
-            popup.style.display = 'none';
+            modal.style.display = 'none';
         }
     })
 }
