@@ -1,4 +1,5 @@
 import review from '../templates/reviews.hbs'
+import popupTemplate from '../templates/form.hbs'
 // console.log(review);
 
 function mapInit() {
@@ -76,9 +77,9 @@ function openModal(event, obj, hint= '') {
     modal.style.top = `${posY}px`;
 
     const popup = document.querySelector('.popup');
-    popup.innerHTML = review();
+    popup.innerHTML = popupTemplate();
 
-    addFeedback(obj, hint);
+    addFeedback(obj, hint, popup);
 }
 
 function getClickCoords(obj, event) {
@@ -87,7 +88,7 @@ function getClickCoords(obj, event) {
         .catch(e => reject(e))
 }
 
-function addFeedback(obj, hint) {
+function addFeedback(obj, hint, popup) {
     const form = document.querySelector('.form');
     const modal = document.querySelector('.form__review');
 
@@ -135,7 +136,7 @@ function addFeedback(obj, hint) {
             obj.myMap.geoObjects.add(placemark);
             obj.clusterer.add(placemark);
 
-            modal.style.display = 'none';
+            popup.style.display = 'none';
 
             clickOnPlacemark(placemark, obj);
         } else {
@@ -156,7 +157,7 @@ function addFeedback(obj, hint) {
 
             obj.clusterer.add(placemark);
 
-            modal.style.display = 'none';
+            popup.style.display = 'none';
         }
     })
 }
