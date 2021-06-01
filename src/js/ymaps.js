@@ -66,7 +66,7 @@ function clickOnPlacemark(mark, obj) {
 
     mark.events.add('click', (event) => {
         console.log(hintFromMark);
-        
+
         openModal(event, obj, hintFromMark);
     })
 }
@@ -74,20 +74,23 @@ function clickOnClusterer(cluster, obj) {
     let hintFromClusterer = cluster.properties._data.hintContent;
 
     cluster.events.add('click', (event) => {
-        console.log('click on clusterer',hintFromClusterer);
-        
+        console.log('click on clusterer', hintFromClusterer);
+
         openModal(event, obj, hintFromClusterer);
     })
 }
 
-function openModal(event, obj, hint= '') {
+function openModal(event, obj, hint = '') {
     // event.preventDefault();
     //координаты модального окна в документе (по верхнему левому углу)
     let posX = event.getSourceEvent().originalEvent.domEvent.originalEvent.clientX;
     let posY = event.getSourceEvent().originalEvent.domEvent.originalEvent.clientY;
 
     const popup = document.querySelector('.popup');
-    popup.innerHTML = popupTemplate();
+    const render = document.querySelector('.reviews__list');
+
+    popup.innerHTML = popupTemplate(); //рендерим модалку шаблона в popup
+    
 
     const modal = document.querySelector('.form__review');
 
@@ -95,58 +98,35 @@ function openModal(event, obj, hint= '') {
     modal.style.left = `${posX}px`;
     modal.style.top = `${posY}px`;
 
-    addFeedback(obj, hint, popup);
+    addFeedback(obj, hint);
 }
 
 function addFeedback(obj, hint) {
     const form = document.querySelector('.form');
     const modal = document.querySelector('.form__review');
+    const render = document.querySelector('reviews__list');
 
     const inputs = document.querySelectorAll('.input');
     const inputName = document.querySelector('#name');
     const inputPlace = document.querySelector('#place');
     const inputReview = document.querySelector('#feedback');
-    // const feedbackName = document.querySelector('.review__name');
-    // const feedbackPlace = document.querySelector('.review__place');
-    // const feedbackArea = document.querySelector('.review__text');
+
+    render.innerHTML = hint; // рендерим блок отзывов из хинта в модалку(в блок <ul>)
 
     for (const input of inputs) {
         input.value = "";
     }
 
-    const render = document.querySelector('.reviews__list');
-    
     form.addEventListener('submit', (event) => {
         event.preventDefault();
-        // feedbackName.textContent = inputName.value;
-        // feedbackPlace.textContent = inputPlace.value;
-        // feedbackArea.textContent = inputReview.value;
-        
+
 
         if (!validateForm()) {
             return;
         }
 
         if (!hint) {
-            let placemark = new ymaps.Placemark(obj.coords, {
-                hintContent: render.innerHTML = review({
-                    review: [
-                        {
-                            name: inputName.value,
-                            place: inputPlace.value,
-                            feedback: inputReview.value
-                        }
-                    ]
-                }),
-                balloonContent: ''
-            }, {
-                openHintOnHover: false
-            });
-
-            obj.myMap.geoObjects.add(placemark);
-            obj.clusterer.add(placemark);
-
-            render.innerHTML = review({
+            let reviewTempl = feedbacksTemplate({
                 review: [
                     {
                         name: inputName.value,
@@ -155,30 +135,23 @@ function addFeedback(obj, hint) {
                     }
                 ]
             });
-
-            // modal.style.display = 'none';
-
-            clickOnPlacemark(placemark, obj);
-            clickOnClusterer(obj.clusterer, obj);
-        } else {
             let placemark = new ymaps.Placemark(obj.coords, {
-                hintContent: render.lastChild.innerHTML = review({
-                    review: [
-                        {
-                            name: inputName.value,
-                            place: inputPlace.value,
-                            feedback: inputReview.value
-                        }
-                    ]
-                }),
+                hintContent: render.innerHTML = reviewTempl,
                 balloonContent: ''
             }, {
                 openHintOnHover: false
             });
 
+            obj.myMap.geoObjects.add(placemark);
             obj.clusterer.add(placemark);
 
             modal.style.display = 'none';
+
+            clickOnPlacemark(placemark, obj);
+            // clickOnClusterer(obj.clusterer, obj);
+        } else {
+            modal.style.display = 'none';
+            clickOnPlacemark(placemark, obj);
         }
     })
 }
