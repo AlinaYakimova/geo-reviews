@@ -3,7 +3,7 @@ import popupTemplate from '../templates/form.hbs'
 // console.log(review);
 
 function mapInit() {
-    let objData = {};
+    // let objData = {};
     //инициализация карты
     ymaps.ready(() => {
         let myMap = new ymaps.Map('map', {
@@ -13,11 +13,12 @@ function mapInit() {
         }, {
             searchControlProvider: 'yandex#search'
         });
-        let customItemContentLayout = ymaps.templateLayoutFactory.createClass(
-            // Флаг "raw" означает, что данные вставляют "как есть" без экранирования html.
-            '<h2 class=ballon_header>{{ properties.balloonContentHeader|raw }}</h2>' +
-                '<div class=ballon_body>{{ properties.balloonContentBody|raw }}</div>' +
-                '<div class=ballon_footer>{{ properties.balloonContentFooter|raw }}</div>'
+        let customItemContentLayout = ymaps.templateLayoutFactory.createClass({
+            build: function () {
+                customItemContentLayout.superclass.build.call(this);
+            }
+        }
+
         );
         //добавляем кластер
         let clusterer = new ymaps.Clusterer({
@@ -47,33 +48,50 @@ function mapInit() {
         myMap.geoObjects.add(clusterer);
 
         //слушатель кликов по карте
-        myMap.events.add('click', function (event) {
-            let coords = event.get('coords');
+        myMap.events.add('click', function(e) {
+            let clickCoords = e.get('coords'); //получение координат по клику
+            let myGeoCoder = ymaps.geocode(clickCoords);// получение адреса по координатам карты
+            let position = e.get('position');// координаты клика в px
+            myGeoCoder.then(res => {
+                let obj = new Object();
+                obj.coords = clickCoords;
+                obj.address = res.geoObjects.get(0).properties.get('text');
+                obj.comments = [];
+                obj.position = position;
+                obj.myMap = myMap;
+                obj.clusterer = clusterer;
 
-            objData.myMap = myMap;
-            objData.coords = coords;
-            objData.clusterer = clusterer;
-
-            getClickCoords(objData, event);
-
+                console.log(obj);
+                openModal(obj);
+            });
         });
+
+        // myMap.events.add('click', function (event) {
+        //     let coords = event.get('coords');
+
+        //     objData.myMap = myMap;
+        //     objData.coords = coords;
+        //     objData.clusterer = clusterer;
+
+        //     getClickCoords(objData, event);
+        // });
     })
 }
 
-function getClickCoords(obj, event) {
-    ymaps.geocode(obj.coords)
-        .then(
-            openModal(event, obj))
-        .catch(e => reject(e))
-}
+// function getClickCoords(obj, event) {
+//     ymaps.geocode(obj.coords)
+//         .then(
+//             openModal(event, obj))
+//         .catch(e => reject(e))
+// }
 
 function clickOnPlacemark(mark, obj) {
     let hintFromMark = mark.properties._data.hintContent;
 
-    mark.events.add('click', (event) => {
+    mark.events.add('click', () => {
         console.log(hintFromMark);
 
-        openModal(event, obj, hintFromMark);
+        openModal(obj, hintFromMark);
     })
 }
 // function clickOnClusterer(cluster, obj) {
@@ -86,11 +104,14 @@ function clickOnPlacemark(mark, obj) {
 //     })
 // }
 
-function openModal(event, obj, hint = '') {
+function openModal(obj, hint = '') {
     // event.preventDefault();
     //координаты модального окна в документе (по верхнему левому углу)
-    let posX = event.getSourceEvent().originalEvent.domEvent.originalEvent.clientX;
-    let posY = event.getSourceEvent().originalEvent.domEvent.originalEvent.clientY;
+    // let posX = event.getSourceEvent().originalEvent.domEvent.originalEvent.clientX;
+    // let posY = event.getSourceEvent().originalEvent.domEvent.originalEvent.clientY;
+
+    let posX = obj.position[0];
+    let posY = obj.position[1];
 
     const popup = document.querySelector('.popup');
     popup.innerHTML = popupTemplate(); //рендерим модалку шаблона в popup
@@ -116,7 +137,7 @@ function addFeedback(obj, hint) {
     const inputPlace = document.querySelector('#place');
     const inputReview = document.querySelector('#feedback');
 
- 
+
 
     for (const input of inputs) {
         input.value = "";
@@ -130,29 +151,32 @@ function addFeedback(obj, hint) {
             return;
         }
 
-            let reviewTempl = reviewsTemplate({
-                review: [
-                    {
-                        name: inputName.value,
-                        place: inputPlace.value,
-                        feedback: inputReview.value
-                    }
-                ]
-            });
-            let placemark = new ymaps.Placemark(obj.coords, {
-                hintContent: render.innerHTML = reviewTempl,
-                balloonContent: ''
-            }, {
-                openHintOnHover: false
-            });
+        obj.comments = reviewsTemplate({
+            review: [
+                {
+                    name: inputName.value,
+                    place: inputPlace.value,
+                    feedback: inputReview.value
+                }
+            ]
+        });
+        let placemark = new ymaps.Placemark(obj.coords, {
+            balloonContentHeader: inputName.value,
+            balloonContentBody: inputPlace.value,
+            balloonContentFooter: inputReview.value,
+            hintContent: render.innerHTML = obj.comments,
+            // balloonContent: ''
+        }, {
+            openHintOnHover: false
+        });
 
-            obj.myMap.geoObjects.add(placemark);
-            obj.clusterer.add(placemark);
+        obj.myMap.geoObjects.add(placemark);
+        obj.clusterer.add(placemark);
 
-            modal.style.display = 'none';
+        modal.style.display = 'none';
 
-            clickOnPlacemark(placemark, obj);
-            // clickOnClusterer(obj.clusterer, obj);
+        clickOnPlacemark(placemark, obj);
+        // clickOnClusterer(obj.clusterer, obj);
     })
 }
 
