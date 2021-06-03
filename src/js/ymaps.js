@@ -12,15 +12,21 @@ function mapInit() {
             behaviors: ['drag']
         }, {
             searchControlProvider: 'yandex#search'
-        })
+        });
+        let customItemContentLayout = ymaps.templateLayoutFactory.createClass(
+            // Флаг "raw" означает, что данные вставляют "как есть" без экранирования html.
+            '<h2 class=ballon_header>{{ properties.balloonContentHeader|raw }}</h2>' +
+                '<div class=ballon_body>{{ properties.balloonContentBody|raw }}</div>' +
+                '<div class=ballon_footer>{{ properties.balloonContentFooter|raw }}</div>'
+        );
         //добавляем кластер
         let clusterer = new ymaps.Clusterer({
             clusterDisableClickZoom: true,
             clusterOpenBalloonOnClick: true,
             // Устанавливаем стандартный макет балуна кластера "Карусель".
-            clusterBalloonContentLayout: 'cluster#balloonCarousel',
+            // clusterBalloonContentLayout: 'cluster#balloonCarousel',
             // Устанавливаем собственный макет.
-            // clusterBalloonItemContentLayout: customItemContentLayout,
+            clusterBalloonItemContentLayout: customItemContentLayout,
             // Устанавливаем режим открытия балуна.
             // В данном примере балун никогда не будет открываться в режиме панели.
             clusterBalloonPanelMaxMapArea: 0,
@@ -159,17 +165,17 @@ function validateForm() {
     if (!validate(form.elements.place)) {
         valid = false;
     }
-    console.log('valid',form.elements.place);
+    // console.log('valid',form.elements.place);
     if (!validate(form.elements.comment)) {
         valid = false;
     }
-    console.log('valid',form.elements.comment.value);
+    // console.log('valid',form.elements.comment.value);
     return valid;
 }
 
 function validate(element) {
     element.value = element.value.trim(); // для удаления пробелов сначала и в конце.
-    console.log(element.value)
+    // console.log(element.value)
     if (!element.value) {
         element.style.border = "1px solid red";
         return false;
