@@ -1,4 +1,4 @@
-import review from '../templates/reviews.hbs'
+import reviewsTemplate from '../templates/reviews.hbs'
 import popupTemplate from '../templates/form.hbs'
 // console.log(review);
 
@@ -70,15 +70,15 @@ function clickOnPlacemark(mark, obj) {
         openModal(event, obj, hintFromMark);
     })
 }
-function clickOnClusterer(cluster, obj) {
-    let hintFromClusterer = cluster.properties._data.hintContent;
+// function clickOnClusterer(cluster, obj) {
+//     let hintFromClusterer = cluster.properties._data.hintContent;
 
-    cluster.events.add('click', (event) => {
-        console.log('click on clusterer', hintFromClusterer);
+//     cluster.events.add('click', (event) => {
+//         console.log('click on clusterer', hintFromClusterer);
 
-        openModal(event, obj, hintFromClusterer);
-    })
-}
+//         openModal(event, obj, hintFromClusterer);
+//     })
+// }
 
 function openModal(event, obj, hint = '') {
     // event.preventDefault();
@@ -87,13 +87,12 @@ function openModal(event, obj, hint = '') {
     let posY = event.getSourceEvent().originalEvent.domEvent.originalEvent.clientY;
 
     const popup = document.querySelector('.popup');
-    const render = document.querySelector('.reviews__list');
-
     popup.innerHTML = popupTemplate(); //рендерим модалку шаблона в popup
-    
+
+    const render = document.querySelector('.reviews__list');
+    render.innerHTML = hint; // рендерим блок отзывов из хинта в модалку(в блок <ul>)
 
     const modal = document.querySelector('.form__review');
-
     modal.style.display = 'block';
     modal.style.left = `${posX}px`;
     modal.style.top = `${posY}px`;
@@ -104,14 +103,14 @@ function openModal(event, obj, hint = '') {
 function addFeedback(obj, hint) {
     const form = document.querySelector('.form');
     const modal = document.querySelector('.form__review');
-    const render = document.querySelector('reviews__list');
+    const render = document.querySelector('.reviews__list');
 
     const inputs = document.querySelectorAll('.input');
     const inputName = document.querySelector('#name');
     const inputPlace = document.querySelector('#place');
     const inputReview = document.querySelector('#feedback');
 
-    render.innerHTML = hint; // рендерим блок отзывов из хинта в модалку(в блок <ul>)
+ 
 
     for (const input of inputs) {
         input.value = "";
@@ -125,8 +124,7 @@ function addFeedback(obj, hint) {
             return;
         }
 
-        if (!hint) {
-            let reviewTempl = feedbacksTemplate({
+            let reviewTempl = reviewsTemplate({
                 review: [
                     {
                         name: inputName.value,
@@ -149,16 +147,11 @@ function addFeedback(obj, hint) {
 
             clickOnPlacemark(placemark, obj);
             // clickOnClusterer(obj.clusterer, obj);
-        } else {
-            modal.style.display = 'none';
-            clickOnPlacemark(placemark, obj);
-        }
     })
 }
 
 function validateForm() {
     const form = document.querySelector('.form');
-    console.log(form.elements.comment);
     let valid = true;
     if (!validate(form.elements.name)) {
         valid = false;
@@ -166,20 +159,22 @@ function validateForm() {
     if (!validate(form.elements.place)) {
         valid = false;
     }
+    console.log('valid',form.elements.place);
     if (!validate(form.elements.comment)) {
         valid = false;
     }
+    console.log('valid',form.elements.comment.value);
     return valid;
 }
 
 function validate(element) {
     element.value = element.value.trim(); // для удаления пробелов сначала и в конце.
-    console.log(element.checkValidity())
-    if (!element.checkValidity()) {
+    console.log(element.value)
+    if (!element.value) {
         element.style.border = "1px solid red";
         return false;
     } else {
-        // element.style.border = "none";
+        element.style.border = "1px solid #CFCFCF";
         return true;
     }
 }
