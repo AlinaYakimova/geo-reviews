@@ -1,6 +1,5 @@
 import reviewsTemplate from '../templates/reviews.hbs'
 import popupTemplate from '../templates/form.hbs'
-// console.log(review);
 
 function mapInit() {
     // let objData = {};
@@ -13,46 +12,28 @@ function mapInit() {
         }, {
             searchControlProvider: 'yandex#search'
         });
-        const popup = document.querySelector('.popup');
-        popup.innerHTML = popupTemplate();
-        console.log(popup.innerHTML);
-        let customItemContentLayout = ymaps.templateLayoutFactory.createClass(
-            // '<div class="form__review">' +
-            // '<a href="#" class="form__close"></a>' +
-            // '<div class="reviews__block">' +
-            // '<ul class="reviews__list"></ul>' +
-            // '</div>' +
-            // '<h3 class="form__title">Отзыв:</h3>' +
-            // '<form class="form">' +
-            // '<div class="form__content">' +
-            // '<input id="name" type="text" class="input" name="name" placeholder="Укажите ваше имя">' +
-            // '<input id="place" type="text" class="input" name="place" placeholder="Укажите место">' +
-            // '<textarea id="feedback" class="input input__textarea" name="comment" placeholder="Оставить отзыв"></textarea>' +
-            // '</div>' +
-            // '<input id="button" type="submit" class="form__button" value="Добавить">' +
-            // '</form>' +
-            // '</div>',
-            popup.innerHTML,
-            {
-                build: function () {
-                    customItemContentLayout.superclass.build.call(this);
-                }
-            });
 
-        ymaps.layout.storage.add('customItemContentLayout', customItemContentLayout)
+        // Создаем собственный макет с информацией о выбранном геообъекте.
+        let customItemContentLayout = ymaps.templateLayoutFactory.createClass(
+            // Флаг "raw" означает, что данные вставляют "как есть" без экранирования html.
+            '<h2 class=ballon_header>{{ properties.balloonContentHeader|raw }}</h2>' +
+            '<div class=ballon_body>{{ properties.balloonContentBody|raw }}</div>' +
+            '<div class=ballon_footer>{{ properties.balloonContentFooter|raw }}</div>'
+        );
+
         //добавляем кластер
         let clusterer = new ymaps.Clusterer({
             clusterDisableClickZoom: true,
             clusterOpenBalloonOnClick: true,
             // Устанавливаем стандартный макет балуна кластера "Карусель".
-            // clusterBalloonContentLayout: 'cluster#balloonCarousel',
+            clusterBalloonContentLayout: 'cluster#balloonCarousel',
             // Устанавливаем собственный макет.
-            clusterBalloonItemContentLayout: 'customItemContentLayout',
+            clusterBalloonItemContentLayout: customItemContentLayout,
             // Устанавливаем режим открытия балуна.
             // В данном примере балун никогда не будет открываться в режиме панели.
             clusterBalloonPanelMaxMapArea: 0,
             // Устанавливаем размеры макета контента балуна (в пикселях).
-            clusterBalloonContentLayoutWidth: 200,
+            clusterBalloonContentLayoutWidth: 270,
             clusterBalloonContentLayoutHeight: 130,
             // Устанавливаем максимальное количество элементов в нижней панели на одной странице
             clusterBalloonPagerSize: 5
@@ -106,8 +87,10 @@ function mapInit() {
 // }
 
 function clickOnPlacemark(mark, obj) {
+    let hintFromMark = mark.properties._data.hintContent;
     mark.events.add('click', () => {
-        openModal(obj);
+        console.log('click on placemark')
+        openModal(obj, hintFromMark);
     })
 }
 // function clickOnClusterer(cluster, obj) {
@@ -117,14 +100,15 @@ function clickOnPlacemark(mark, obj) {
 //         console.log('click on clusterer', hintFromClusterer);
 
 //         openModal(event, obj, hintFromClusterer);
-//     })
+//     });
 // }
 
-function openModal(obj) {
+function openModal(obj, hint = '') {
     // event.preventDefault();
     //координаты модального окна в документе (по верхнему левому углу)
     // let posX = event.getSourceEvent().originalEvent.domEvent.originalEvent.clientX;
     // let posY = event.getSourceEvent().originalEvent.domEvent.originalEvent.clientY;
+
 
     let posX = obj.position[0];
     let posY = obj.position[1];
@@ -133,17 +117,24 @@ function openModal(obj) {
     popup.innerHTML = popupTemplate(); //рендерим модалку шаблона в popup
 
     const render = document.querySelector('.reviews__list');
-    render.innerHTML = obj.comments; // рендерим блок отзывов из хинта в модалку(в блок <ul>)
+    render.innerHTML = hint; // рендерим блок отзывов из хинта в модалку(в блок <ul>)
 
     const modal = document.querySelector('.form__review');
     modal.style.display = 'block';
     modal.style.left = `${posX}px`;
     modal.style.top = `${posY}px`;
 
-    addFeedback(obj);
+    const closeModal = document.querySelector('.form__close');
+
+    closeModal.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+
+
+    addFeedback(obj, hint);
 }
 
-function addFeedback(obj) {
+function addFeedback(obj, hint) {
     const form = document.querySelector('.form');
     const modal = document.querySelector('.form__review');
     const render = document.querySelector('.reviews__list');
@@ -153,8 +144,6 @@ function addFeedback(obj) {
     const inputPlace = document.querySelector('#place');
     const inputReview = document.querySelector('#feedback');
 
-
-
     for (const input of inputs) {
         input.value = "";
     }
@@ -162,37 +151,33 @@ function addFeedback(obj) {
     form.addEventListener('submit', (event) => {
         event.preventDefault();
 
-
         if (!validateForm()) {
             return;
         }
 
-        obj.comments = reviewsTemplate({
-            review: [
-                {
-                    name: inputName.value,
-                    place: inputPlace.value,
-                    feedback: inputReview.value
-                }
-            ]
-        });
         let placemark = new ymaps.Placemark(obj.coords, {
             // balloonContentHeader: inputName.value,
             // balloonContentBody: inputPlace.value,
             // balloonContentFooter: inputReview.value,
-            // hintContent: render.innerHTML = obj.comments,
-            // balloonContent: ''
+            hintContent: render.innerHTML = reviewsTemplate({
+                review: [
+                    {
+                        name: inputName.value,
+                        place: inputPlace.value,
+                        feedback: inputReview.value
+                    }
+                ]
+            }),
+            balloonContentHeader: inputName.value,
+            balloonContentBody: inputPlace.value,
+            balloonContentFooter: inputReview.value
         }, {
-            openHintOnHover: false
+            openHintOnHover: false,
+            hasBalloon: false
         });
-        // placemark.properties.set('balloonContentBody', `${comment.feedback}`
-        // );
-        // placemark.properties.set('balloonContentFooter', `${comment.date}`
-        // );
 
         obj.myMap.geoObjects.add(placemark);
         obj.clusterer.add(placemark);
-        placemark.balloon.open(obj.coords, {}, {layout: 'customItemContentLayout'});
 
         modal.style.display = 'none';
 
