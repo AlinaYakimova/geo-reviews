@@ -191,16 +191,6 @@ function addFeedback(obj, hint) {
         obj.myMap.geoObjects.add(placemark);
         obj.clusterer.add(placemark);
 
-        render.innerHTML = reviewsTemplate({
-            review: [
-                {
-                    name: inputName.value,
-                    place: inputPlace.value,
-                    feedback: inputReview.value
-                }
-            ]
-        });
-
         modal.style.display = 'none';
 
         clickOnPlacemark(placemark, obj);

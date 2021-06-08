@@ -148,6 +148,10 @@ ul {
     cursor: pointer;
 }
 
+.ballon_link:hover {
+    color: #1371C8;
+}
+
 ::-webkit-input-placeholder {
     /* WebKit browsers */
     color: #000;
