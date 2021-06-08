@@ -2,7 +2,8 @@ import reviewsTemplate from '../templates/reviews.hbs'
 import popupTemplate from '../templates/form.hbs'
 
 function mapInit() {
-    // let objData = {};
+    let obj = new Object(); //объект данных карты
+
     //инициализация карты
     ymaps.ready(() => {
         let myMap = new ymaps.Map('map', {
@@ -18,7 +19,22 @@ function mapInit() {
             // Флаг "raw" означает, что данные вставляют "как есть" без экранирования html.
             '<h2 class=ballon_header>{{ properties.balloonContentHeader|raw }}</h2>' +
             '<div class=ballon_body>{{ properties.balloonContentBody|raw }}</div>' +
-            '<div class=ballon_footer>{{ properties.balloonContentFooter|raw }}</div>'
+            '<div class=ballon_footer>{{ properties.balloonContentFooter|raw }}</div>'+
+            '<div class=ballon_link >Добавить отзыв</div>',
+
+            {
+                build: function () {
+                    // Вызываем родительский метод build.
+                    customItemContentLayout.superclass.build.call(this);
+
+                    let linkInCluster = document.querySelector('.ballon_link');
+                    linkInCluster.addEventListener('click', this.onLinkClick.bind(linkInCluster));
+                },
+
+                onLinkClick: function () {
+                    openModal(obj);
+                }
+            }
         );
 
         //добавляем кластер
@@ -54,7 +70,7 @@ function mapInit() {
             let myGeoCoder = ymaps.geocode(clickCoords);// получение адреса по координатам карты
             let position = e.get('position');// координаты клика в px
             myGeoCoder.then(res => {
-                let obj = new Object();
+               
                 obj.coords = clickCoords;
                 obj.address = res.geoObjects.get(0).properties.get('text');
                 obj.comments = [];
@@ -104,7 +120,6 @@ function clickOnPlacemark(mark, obj) {
 // }
 
 function openModal(obj, hint = '') {
-    // event.preventDefault();
     //координаты модального окна в документе (по верхнему левому углу)
     // let posX = event.getSourceEvent().originalEvent.domEvent.originalEvent.clientX;
     // let posY = event.getSourceEvent().originalEvent.domEvent.originalEvent.clientY;
@@ -156,9 +171,6 @@ function addFeedback(obj, hint) {
         }
 
         let placemark = new ymaps.Placemark(obj.coords, {
-            // balloonContentHeader: inputName.value,
-            // balloonContentBody: inputPlace.value,
-            // balloonContentFooter: inputReview.value,
             hintContent: render.innerHTML = reviewsTemplate({
                 review: [
                     {
@@ -178,6 +190,16 @@ function addFeedback(obj, hint) {
 
         obj.myMap.geoObjects.add(placemark);
         obj.clusterer.add(placemark);
+
+        render.innerHTML = reviewsTemplate({
+            review: [
+                {
+                    name: inputName.value,
+                    place: inputPlace.value,
+                    feedback: inputReview.value
+                }
+            ]
+        });
 
         modal.style.display = 'none';
 

@@ -140,6 +140,14 @@ ul {
     color: #8F8F8F;
 }
 
+.ballon_footer {
+    margin-bottom: 10px;
+}
+
+.ballon_link {
+    cursor: pointer;
+}
+
 ::-webkit-input-placeholder {
     /* WebKit browsers */
     color: #000;
