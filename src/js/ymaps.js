@@ -19,7 +19,7 @@ function mapInit() {
             // Флаг "raw" означает, что данные вставляют "как есть" без экранирования html.
             '<h2 class=ballon_header>{{ properties.balloonContentHeader|raw }}</h2>' +
             '<div class=ballon_body>{{ properties.balloonContentBody|raw }}</div>' +
-            '<div class=ballon_footer>{{ properties.balloonContentFooter|raw }}</div>'+
+            '<div class=ballon_footer>{{ properties.balloonContentFooter|raw }}</div>' +
             '<div class=ballon_link >Добавить отзыв</div>',
 
             {
@@ -70,7 +70,7 @@ function mapInit() {
             let myGeoCoder = ymaps.geocode(clickCoords);// получение адреса по координатам карты
             let position = e.get('position');// координаты клика в px
             myGeoCoder.then(res => {
-               
+
                 obj.coords = clickCoords;
                 obj.address = res.geoObjects.get(0).properties.get('text');
                 obj.comments = [];
@@ -102,11 +102,11 @@ function mapInit() {
 //         .catch(e => reject(e))
 // }
 
-function clickOnPlacemark(mark, obj) {
+function clickOnPlacemark(mark, obj, markPosition) {
     let hintFromMark = mark.properties._data.hintContent;
     mark.events.add('click', () => {
         console.log('click on placemark')
-        openModal(obj, hintFromMark);
+        openModal(obj, hintFromMark, markPosition);
     })
 }
 // function clickOnClusterer(cluster, obj) {
@@ -119,14 +119,22 @@ function clickOnPlacemark(mark, obj) {
 //     });
 // }
 
-function openModal(obj, hint = '') {
+function openModal(obj, hint = '', markPosition = '') {
     //координаты модального окна в документе (по верхнему левому углу)
-    // let posX = event.getSourceEvent().originalEvent.domEvent.originalEvent.clientX;
-    // let posY = event.getSourceEvent().originalEvent.domEvent.originalEvent.clientY;
+    let posX;
+    let posY;
 
-
-    let posX = obj.position[0];
-    let posY = obj.position[1];
+    if (markPosition) {
+        console.log('markPosition', markPosition)
+        posX = markPosition[0];
+        posY = markPosition[1];
+    } else {
+        console.log('obj.position', obj.position)
+        posX = obj.position[0];
+        posY = obj.position[1];
+    }
+    console.log(posX);
+    console.log(posY);
 
     const popup = document.querySelector('.popup');
     popup.innerHTML = popupTemplate(); //рендерим модалку шаблона в popup
@@ -146,10 +154,10 @@ function openModal(obj, hint = '') {
     });
 
 
-    addFeedback(obj, hint);
+    addFeedback(obj);
 }
 
-function addFeedback(obj, hint) {
+function addFeedback(obj) {
     const form = document.querySelector('.form');
     const modal = document.querySelector('.form__review');
     const render = document.querySelector('.reviews__list');
@@ -170,22 +178,24 @@ function addFeedback(obj, hint) {
             return;
         }
 
+        const templ = reviewsTemplate({
+            review: [
+                {
+                    name: inputName.value,
+                    place: inputPlace.value,
+                    feedback: inputReview.value
+                }
+            ]
+        });
+
         let placemark = new ymaps.Placemark(obj.coords, {
-            hintContent: render.innerHTML = reviewsTemplate({
-                review: [
-                    {
-                        name: inputName.value,
-                        place: inputPlace.value,
-                        feedback: inputReview.value
-                    }
-                ]
-            }),
+            hintContent: render.innerHTML = templ,
             balloonContentHeader: inputName.value,
             balloonContentBody: inputPlace.value,
             balloonContentFooter: inputReview.value
         }, {
             openHintOnHover: false,
-            hasBalloon: false
+            // hasBalloon: false
         });
 
         obj.myMap.geoObjects.add(placemark);
