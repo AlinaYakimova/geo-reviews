@@ -195,7 +195,7 @@ function addFeedback(obj) {
             balloonContentFooter: inputReview.value
         }, {
             openHintOnHover: false,
-            // hasBalloon: false
+            hasBalloon: false
         });
 
         obj.myMap.geoObjects.add(placemark);
@@ -203,7 +203,9 @@ function addFeedback(obj) {
 
         modal.style.display = 'none';
 
-        clickOnPlacemark(placemark, obj);
+        const placemarkPosition = obj.position;
+
+        clickOnPlacemark(placemark, obj, placemarkPosition);
         // clickOnClusterer(obj.clusterer, obj);
     })
 }
