@@ -14,13 +14,31 @@ function mapInit() {
             searchControlProvider: 'yandex#search'
         });
 
+        //слушатель кликов по карте
+        myMap.events.add('click', function (e) {
+            let clickCoords = e.get('coords'); //получение координат по клику
+            let myGeoCoder = ymaps.geocode(clickCoords);// получение адреса по координатам карты
+            let position = e.get('position');// координаты клика в px
+            myGeoCoder.then(res => {
+
+                obj.coords = clickCoords;
+                obj.address = res.geoObjects.get(0).properties.get('text');
+                obj.comments = [];
+                obj.position = position;
+                obj.myMap = myMap;
+                obj.clusterer = clusterer;
+
+                console.log(obj);
+                openModal(e, obj);
+            });
+        });
+
         // Создаем собственный макет с информацией о выбранном геообъекте.
         let customItemContentLayout = ymaps.templateLayoutFactory.createClass(
             // Флаг "raw" означает, что данные вставляют "как есть" без экранирования html.
             '<h2 class=ballon_header>{{ properties.balloonContentHeader|raw }}</h2>' +
             '<div class=ballon_body>{{ properties.balloonContentBody|raw }}</div>' +
-            '<div class=ballon_footer>{{ properties.balloonContentFooter|raw }}</div>' +
-            '<div class=ballon_link >Добавить отзыв</div>',
+            '<div class=ballon_footer>{{ properties.balloonContentFooter|raw }}</div>',
 
             {
                 build: function () {
@@ -32,7 +50,10 @@ function mapInit() {
                 },
 
                 onLinkClick: function () {
-                    openModal(obj);
+
+                    this.dataset.positionLink = JSON.stringify(obj.position); //записывает в data-фтрибут позицию клика "[]"
+                    let getPositionLink = JSON.parse(this.dataset.positionLink) //парсим строку координатами позиции в px
+                    openModal(getPositionLink, obj);
                 }
             }
         );
@@ -64,24 +85,7 @@ function mapInit() {
         // console.log('clusterer', clusterer);
         myMap.geoObjects.add(clusterer);
 
-        //слушатель кликов по карте
-        myMap.events.add('click', function (e) {
-            let clickCoords = e.get('coords'); //получение координат по клику
-            let myGeoCoder = ymaps.geocode(clickCoords);// получение адреса по координатам карты
-            let position = e.get('position');// координаты клика в px
-            myGeoCoder.then(res => {
-
-                obj.coords = clickCoords;
-                obj.address = res.geoObjects.get(0).properties.get('text');
-                obj.comments = [];
-                obj.position = position;
-                obj.myMap = myMap;
-                obj.clusterer = clusterer;
-
-                console.log(obj);
-                openModal(obj);
-            });
-        });
+        
 
         // myMap.events.add('click', function (event) {
         //     let coords = event.get('coords');
@@ -102,11 +106,12 @@ function mapInit() {
 //         .catch(e => reject(e))
 // }
 
-function clickOnPlacemark(mark, obj, markPosition) {
+function clickOnPlacemark(mark, obj) {
     let hintFromMark = mark.properties._data.hintContent;
-    mark.events.add('click', () => {
-        console.log('click on placemark')
-        openModal(obj, hintFromMark, markPosition);
+    mark.events.add('click', (e) => {
+        let getPositionMark = e.get('position');
+        console.log('click on placemark');
+        openModal(getPositionMark, obj, hintFromMark);
     })
 }
 // function clickOnClusterer(cluster, obj) {
@@ -119,22 +124,12 @@ function clickOnPlacemark(mark, obj, markPosition) {
 //     });
 // }
 
-function openModal(obj, hint = '', markPosition = '') {
+function openModal(position, obj, hint = '') {
     //координаты модального окна в документе (по верхнему левому углу)
-    let posX;
-    let posY;
 
-    if (markPosition) {
-        console.log('markPosition', markPosition)
-        posX = markPosition[0];
-        posY = markPosition[1];
-    } else {
-        console.log('obj.position', obj.position)
-        posX = obj.position[0];
-        posY = obj.position[1];
-    }
-    console.log(posX);
-    console.log(posY);
+    // let position = e.get('position');
+    let posX = position[0];
+    let posY = position[1];
 
     const popup = document.querySelector('.popup');
     popup.innerHTML = popupTemplate(); //рендерим модалку шаблона в popup
@@ -148,11 +143,9 @@ function openModal(obj, hint = '', markPosition = '') {
     modal.style.top = `${posY}px`;
 
     const closeModal = document.querySelector('.form__close');
-
     closeModal.addEventListener('click', () => {
         modal.style.display = 'none';
     });
-
 
     addFeedback(obj);
 }
@@ -192,7 +185,8 @@ function addFeedback(obj) {
             hintContent: render.innerHTML = templ,
             balloonContentHeader: inputName.value,
             balloonContentBody: inputPlace.value,
-            balloonContentFooter: inputReview.value
+            balloonContentFooter: inputReview.value +
+            '<a href="#" data-position=obj-position class=balloon-link >Добавить отзыв</a>',
         }, {
             openHintOnHover: false,
             hasBalloon: false
@@ -203,9 +197,7 @@ function addFeedback(obj) {
 
         modal.style.display = 'none';
 
-        const placemarkPosition = obj.position;
-
-        clickOnPlacemark(placemark, obj, placemarkPosition);
+        clickOnPlacemark(placemark, obj);
         // clickOnClusterer(obj.clusterer, obj);
     })
 }

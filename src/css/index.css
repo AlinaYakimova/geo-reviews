@@ -144,11 +144,11 @@ ul {
     margin-bottom: 10px;
 }
 
-.ballon_link {
-    cursor: pointer;
+.balloon-link {
+    text-decoration: none;
 }
 
-.ballon_link:hover {
+.balloon-link:hover {
     color: #1371C8;
 }
 
