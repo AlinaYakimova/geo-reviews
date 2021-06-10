@@ -29,7 +29,7 @@ function mapInit() {
                 obj.clusterer = clusterer;
 
                 console.log(obj);
-                openModal(e, obj);
+                openModal(obj);
             });
         });
 
@@ -44,16 +44,26 @@ function mapInit() {
                 build: function () {
                     // Вызываем родительский метод build.
                     customItemContentLayout.superclass.build.call(this);
+                    let parentElem = this.getParentElement();
+                    let linkInCluster = parentElem.querySelector('.balloon-link');
 
-                    let linkInCluster = document.querySelector('.ballon_link');
                     linkInCluster.addEventListener('click', this.onLinkClick.bind(linkInCluster));
                 },
 
                 onLinkClick: function () {
+                    // здесь this указывает на link
+                    let getPositionLink = (this.dataset.positionLink); // получаем данные позиции в px из data - атрибута
+                    let getCoordsLink = (this.dataset.coordsLink); // получаем данные коор-т из data - атрибута
 
-                    this.dataset.positionLink = JSON.stringify(obj.position); //записывает в data-фтрибут позицию клика "[]"
-                    let getPositionLink = JSON.parse(this.dataset.positionLink) //парсим строку координатами позиции в px
-                    openModal(getPositionLink, obj);
+                    let arrPos = getPositionLink.split(',');
+                    let arrCoords = getCoordsLink.split(',');
+                    let positionLink = arrPos.map(function (str) { return parseFloat(str); });
+                    let coordsLink = arrCoords.map(function (str) { return parseFloat(str); });
+
+                    obj.position = positionLink;
+                    obj.coords = coordsLink;
+
+                    openModal(obj);
                 }
             }
         );
@@ -85,7 +95,7 @@ function mapInit() {
         // console.log('clusterer', clusterer);
         myMap.geoObjects.add(clusterer);
 
-        
+
 
         // myMap.events.add('click', function (event) {
         //     let coords = event.get('coords');
@@ -110,26 +120,22 @@ function clickOnPlacemark(mark, obj) {
     let hintFromMark = mark.properties._data.hintContent;
     mark.events.add('click', (e) => {
         let getPositionMark = e.get('position');
+        let getCoordsMark = e.get('coords');
         console.log('click on placemark');
-        openModal(getPositionMark, obj, hintFromMark);
+
+        obj.position = getPositionMark;
+        obj.coords = getCoordsMark;
+
+        openModal(obj, hintFromMark);
     })
 }
-// function clickOnClusterer(cluster, obj) {
-//     let hintFromClusterer = cluster.properties._data.hintContent;
 
-//     cluster.events.add('click', (event) => {
-//         console.log('click on clusterer', hintFromClusterer);
-
-//         openModal(event, obj, hintFromClusterer);
-//     });
-// }
-
-function openModal(position, obj, hint = '') {
+function openModal(obj, hint = '') {
     //координаты модального окна в документе (по верхнему левому углу)
 
     // let position = e.get('position');
-    let posX = position[0];
-    let posY = position[1];
+    let posX = obj.position[0];
+    let posY = obj.position[1];
 
     const popup = document.querySelector('.popup');
     popup.innerHTML = popupTemplate(); //рендерим модалку шаблона в popup
@@ -186,7 +192,7 @@ function addFeedback(obj) {
             balloonContentHeader: inputName.value,
             balloonContentBody: inputPlace.value,
             balloonContentFooter: inputReview.value +
-            '<a href="#" data-position=obj-position class=balloon-link >Добавить отзыв</a>',
+                `<a href="#" data-position-link=${obj.position} data-coords-link=${obj.coords} class=balloon-link >Добавить отзыв</a>`,
         }, {
             openHintOnHover: false,
             hasBalloon: false

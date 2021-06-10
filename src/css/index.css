@@ -145,7 +145,10 @@ ul {
 }
 
 .balloon-link {
+    display: block;
     text-decoration: none;
+    margin-top: 20px;
+    color: inherit;
 }
 
 .balloon-link:hover {
